@@ -1,0 +1,15 @@
+[Unit]
+Description=Qwen Telegram Bot
+After=network.target
+
+[Service]
+Type=simple
+User=gonozov0
+WorkingDirectory=/home/gonozov0/qwen-tg-bot
+ExecStart=/home/gonozov0/.local/bin/uv run python main.py
+Restart=always
+RestartSec=5
+EnvironmentFile=/home/gonozov0/qwen-tg-bot/.env
+
+[Install]
+WantedBy=multi-user.target
