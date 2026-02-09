@@ -24,6 +24,9 @@ dp = Dispatcher()
 # tg_user_id -> qwen session_id
 sessions: dict[int, str] = {}
 
+# Все известные session_id (существовавшие при старте + созданные ботом)
+known_session_ids: set[str] = set()
+
 # Однопоточность: только один qwen-процесс одновременно
 qwen_lock = asyncio.Lock()
 
@@ -50,7 +53,7 @@ def list_session_ids() -> set[str]:
 
 async def run_qwen(prompt: str, session_id: str | None = None) -> str:
     """Запускает qwen в headless-режиме и возвращает stdout."""
-    cmd = ["qwen", "--chat-recording"]
+    cmd = ["qwen"]
     if session_id:
         cmd.append(f"--resume={session_id}")
     cmd.extend(["-p", f"\"{prompt}\""])
@@ -99,15 +102,14 @@ async def handle_message(message: types.Message):
             # Продолжаем существующую сессию
             response = await run_qwen(message.text, sessions[user_id])
         else:
-            # Новая сессия: запоминаем файлы до запуска
-            before = list_session_ids()
+            # Новая сессия: ищем разницу с известными сессиями
             response = await run_qwen(message.text)
-            after = list_session_ids()
-            new_ids = after - before
+            new_ids = list_session_ids() - known_session_ids
             logger.info(f"new ids: {new_ids}")
             if new_ids:
                 session_id = new_ids.pop()
                 sessions[user_id] = session_id
+                known_session_ids.update(new_ids | {session_id})
                 logger.info(f"New session for user {user_id}: {session_id}")
             else:
                 logger.warning(f"Could not detect new session for user {user_id}")
@@ -124,9 +126,10 @@ async def handle_message(message: types.Message):
 
 async def main():
     QWEN_WORK_DIR.mkdir(parents=True, exist_ok=True)
+    known_session_ids.update(list_session_ids())
     logger.info(f"Qwen work dir: {QWEN_WORK_DIR}")
     logger.info(f"Qwen chats dir: {get_chats_dir()}")
-    logger.info(f"Sessions: {list_session_ids()}")
+    logger.info(f"Known sessions at startup: {known_session_ids}")
     await dp.start_polling(bot)
 
 
