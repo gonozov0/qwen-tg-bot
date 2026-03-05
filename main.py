@@ -21,6 +21,7 @@ BOT_TOKEN = os.environ["TG_BOT_TOKEN"]
 ALLOWED_USER_IDS: set[int] = {
     288295826, # gonozov0
     162570454, # sincoren
+    91555305, # askoldromanov
 }
 
 bot = Bot(token=BOT_TOKEN)
