@@ -20,6 +20,7 @@ BOT_TOKEN = os.environ["TG_BOT_TOKEN"]
 # Whitelist Telegram ID пользователей, которым разрешён доступ к qwen
 ALLOWED_USER_IDS: set[int] = {
     288295826, # gonozov0
+    162570454, # sincoren
 }
 
 bot = Bot(token=BOT_TOKEN)
