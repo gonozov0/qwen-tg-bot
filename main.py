@@ -7,7 +7,7 @@ import logging
 from dataclasses import dataclass
 
 from aiogram import Bot, Dispatcher, types
-from aiogram.filters import CommandStart
+from aiogram.filters import Command, CommandStart
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -16,6 +16,11 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 BOT_TOKEN = os.environ["TG_BOT_TOKEN"]
+
+# Whitelist Telegram ID пользователей, которым разрешён доступ к qwen
+ALLOWED_USER_IDS: set[int] = {
+    288295826, # gonozov0
+}
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
@@ -89,6 +94,11 @@ async def cmd_start(message: types.Message):
         )
 
 
+@dp.message(Command("myid"))
+async def cmd_myid(message: types.Message):
+    await message.reply(f"Твой Telegram ID: `{message.from_user.id}`", parse_mode="Markdown")
+
+
 @dp.message()
 async def handle_message(message: types.Message):
     if not message.text:
@@ -96,6 +106,12 @@ async def handle_message(message: types.Message):
         return
 
     user_id = message.from_user.id
+
+    if ALLOWED_USER_IDS and user_id not in ALLOWED_USER_IDS:
+        await message.reply("⛔ У тебя нет доступа к этому боту. Обратись к администратору.")
+        logger.warning(f"Access denied for user {user_id}")
+        return
+
     wait_msg = await message.reply("Думаю...")
 
     async with qwen_lock:
